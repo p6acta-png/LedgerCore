@@ -11,7 +11,7 @@ This file records what has been **actually executed**, where, and with what resu
 | PostgreSQL | 17.10 portable binaries (EDB), run on 127.0.0.1:55432 by `scripts/local-postgres.ps1` |
 | Docker | **Not available** (no Docker Desktop, no WSL, no admin rights) |
 
-Consequence: every database test ran against a **real PostgreSQL 17.10** server through `LEDGERCORE_TEST_POSTGRES`. The Testcontainers code path (`PostgresServer.InitializeAsync`, used when that variable is unset), the `Dockerfile`, `docker-compose.yml` and `.github/workflows/ci.yml` were written but **not executed on this machine**. CI on GitHub (which has Docker) is the intended first execution of those paths.
+Consequence: every **local** database test ran against a **real PostgreSQL 17.10** server through `LEDGERCORE_TEST_POSTGRES`. The Docker-dependent paths (the Testcontainers branch of `PostgresServer.InitializeAsync`, used when that variable is unset, the `Dockerfile`, `docker-compose.yml` and `.github/workflows/ci.yml`) could not run on this machine. They were first executed on GitHub Actions, see [CI runs on GitHub Actions](#ci-runs-on-github-actions).
 
 ## Phase status
 
@@ -22,7 +22,7 @@ Consequence: every database test ran against a **real PostgreSQL 17.10** server 
 | 3 | Idempotency + concurrency protection | Done |
 | 4 | Authentication, authorization, audit | Done |
 | 5 | Integration, concurrency, failure tests | Done (170 tests) |
-| 6 | Outbox + worker, metrics/tracing, load test, Docker, CI | Done. Docker/CI not executed locally (see above) |
+| 6 | Outbox + worker, metrics/tracing, load test, Docker, CI | Done. Docker and CI verified on GitHub Actions (see below) |
 | 7 | Documentation, learning materials, tech-lead challenge | Done |
 
 ## Recorded test runs
@@ -63,10 +63,42 @@ The integration suite includes **real OS process termination**: the API is start
 * After the demo, the worker had delivered every outbox message exactly once (12/12, `delivery_count = 1`).
 * Load test (`tools/LedgerCore.LoadTest`, 30 s, 32 clients, two instances): 14 622 requests, 485 req/s, p50 27.7 ms, p95 331.8 ms, p99 560 ms. Money conserved, reconciliation consistent, `pg_stat_database.deadlocks = 0`, no warnings or errors in the API logs, all 13 054 outbox messages delivered by the worker. See `docs/benchmarks/LOAD_TEST_RESULTS.md`.
 
+## CI runs on GitHub Actions
+
+Repository: https://github.com/p6acta-png/LedgerCore, workflow `ci` (`.github/workflows/ci.yml`), runner `ubuntu-latest`. These were the first executions of the Docker-dependent paths. Both runs passed **without any change** to the `Dockerfile`, `docker-compose.yml`, the Testcontainers code, `ProcessHost` or `scripts/demo.sh`.
+
+| Run | Commit | `build-and-test` | `compose-smoke` |
+|---|---|---|---|
+| [38652061971](https://github.com/p6acta-png/LedgerCore/actions/runs/38652061971) | `0549af5` initial commit | success (91 s) | success (64 s) |
+| [38652684306](https://github.com/p6acta-png/LedgerCore/actions/runs/38652684306) | `16bdbf9` adds `scripts/test-summary.sh` | success (92 s) | success (52 s) |
+
+Run 38652684306 step by step. Test counts come from the TRX files; `scripts/test-summary.sh` publishes them as annotations on the run, readable without a login:
+
+```
+build (Release, warnings are errors)      success  10 s
+unit tests                                68 passed, 0 failed, 0 not executed (68 total)    2 s
+integration tests                         91 passed, 0 failed, 0 not executed (91 total)   33 s
+  (Testcontainers postgres:17-alpine, including ProcessCrashTests and WorkerProcessTests with real process kills on Linux)
+concurrency tests                         11 passed, 0 failed, 0 not executed (11 total)   18 s
+docker compose up -d --build              success  43 s  (postgres, migrate+seed, api-1, api-2, 2 worker replicas)
+scripts/demo.sh against :8080 and :8081   success   4 s  (the script exits non-zero if any check fails)
+```
+
+Run 38652061971 (before the summary step existed) passed the same steps; its per-suite counts were not published.
+
+Why the summary step was added: `dotnet test` exits 0 when it discovers no tests, so a green step alone does not prove the tests ran. The step now fails the job if a suite has zero tests or any failure.
+
+Not verified by CI:
+
+* Job logs were not read: downloading Actions logs needs repository admin authentication, and the GitHub CLI was not logged in on the development machine. That includes the output of the `Report vulnerable packages` step; it succeeded, but its findings were not reviewed.
+* The two worker containers start, but `demo.sh` does not assert outbox delivery inside the compose stack. Outbox delivery is covered by `OutboxTests` and `WorkerProcessTests` (which passed in CI) and by the local demo above.
+* Only Docker on Linux (`ubuntu-latest`) was used. Docker Desktop on Windows or macOS has not been tried.
+* The load test was not run in CI.
+
 ## Not done / open items
 
-* Execute `docker compose up` and the GitHub Actions workflow on a machine with Docker (first action item for a reviewer with Docker).
 * The production authentication path (external OpenID Connect provider via `Authentication:Jwt:Authority`) is configured and guarded, but has not been run against a real identity provider.
 * There is no unfreeze workflow for wallets frozen by reconciliation.
 * The optional observability profile (Aspire dashboard image in `docker-compose.yml`) is unverified.
-* The repository is not under git yet. Initialising it, committing and pushing are left to the owner.
+* Possible compose start-up race, **not observed** in the two CI runs: the postgres healthcheck runs `pg_isready` over the Unix socket. The official image's temporary init server also listens on that socket, so the container can report healthy during initialisation, and the `migrate` service does not retry its connection. Hardening options: `pg_isready -h 127.0.0.1`, or a connect retry in `migrate`.
+* CI maintenance warnings from GitHub: `actions/checkout@v4`, `actions/setup-dotnet@v4` and `actions/upload-artifact@v4` target the deprecated Node.js 20 and are currently forced onto Node.js 24. `ubuntu-latest` moves to Ubuntu 26 from 2026-10-19, and the workflow has not run there yet.

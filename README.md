@@ -155,7 +155,7 @@ scripts/  verify.sh · verify.ps1 · demo.sh · local-postgres.ps1
 - **Frozen wallets have no unfreeze workflow.** Unfreezing requires an investigated, audited operator action, which is not implemented.
 - **Authentication in Development is a local HMAC token issuer.** Production mode expects an external OpenID Connect provider and has not been exercised against a real one.
 - **Audit log is append-only at the DB-trigger level**, but a database superuser can still disable triggers. There is no cryptographic tamper evidence (hash chaining).
-- **Verification gaps on the development machine:** Docker was not available, so `docker compose`, the Dockerfile and the GitHub Actions workflow were written but **not executed**. All tests ran against a real local PostgreSQL 17.10 instead of Testcontainers. See [PROGRESS.md](PROGRESS.md).
+- **Verification gaps:** the development machine had no Docker, so all local tests ran against a real local PostgreSQL 17.10 instead of Testcontainers. The Docker paths (Testcontainers, the Dockerfile, `docker compose` and the GitHub Actions workflow) were then verified in CI on `ubuntu-latest`: 170/170 tests and the two-instance compose demo passed. Not verified: Docker Desktop on Windows/macOS and the observability profile. See [PROGRESS.md](PROGRESS.md).
 
 More detail: [docs/security/THREAT_MODEL.md](docs/security/THREAT_MODEL.md) and [docs/INTERVIEW_DEFENSE.md](docs/INTERVIEW_DEFENSE.md) (section "Limits of the design").
 
