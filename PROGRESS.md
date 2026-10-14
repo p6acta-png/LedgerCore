@@ -21,7 +21,7 @@ Consequence: every **local** database test ran against a **real PostgreSQL 17.10
 | 2 | Balanced ledger + transaction engine | Done |
 | 3 | Idempotency + concurrency protection | Done |
 | 4 | Authentication, authorization, audit | Done |
-| 5 | Integration, concurrency, failure tests | Done (170 tests) |
+| 5 | Integration, concurrency, failure tests | Done (171 tests: 68 unit, 92 integration, 11 concurrency) |
 | 6 | Outbox + worker, metrics/tracing, load test, Docker, CI | Done. Docker and CI verified on GitHub Actions (see below) |
 | 7 | Documentation, learning materials, tech-lead challenge | Done |
 
@@ -49,6 +49,7 @@ The integration suite includes **real OS process termination**: the API is start
 | `SchemaIntegrityTests` | `UPDATE transfers` "succeeded" because the test had no transfer rows (row triggers never fired). A test bug, not a product bug | The test now creates real history through the API before attacking it |
 | Demo script | Race-result comparison was sensitive to line endings | Counts status lines instead of comparing strings |
 | Load test setup | Hit the dev-token rate limit (20/min) | Development settings raise dev-only limits; production defaults unchanged |
+| Opening Swagger UI in a browser (after the CI runs) | `/swagger` answered 401 in Development although the README promised it. `UseSwaggerUI` ran after `UseAuthorization`, and the fallback policy also applies to requests that match no endpoint. No test covered it | Swagger UI and the OpenAPI document are wired before authentication; `Development_hosts_serve_swagger_ui_and_the_openapi_document_anonymously` (integration suite now 92 tests, 92 passed locally) |
 
 ### Mutation checks (do the tests catch real regressions?)
 

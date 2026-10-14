@@ -44,6 +44,18 @@ public sealed class ObservabilityTests(PostgresServer server) : ApiTestBase(serv
     }
 
     [Fact]
+    public async Task Development_hosts_serve_swagger_ui_and_the_openapi_document_anonymously()
+    {
+        // Swagger UI is middleware, not an endpoint: it must run before the secure-by-default fallback policy.
+        using var swagger = await Client.Http.GetAsync("/swagger/index.html");
+        using var openApi = await Client.Http.GetAsync("/openapi/v1.json");
+
+        Assert.Equal(HttpStatusCode.OK, swagger.StatusCode);
+        Assert.Equal("text/html", swagger.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.OK, openApi.StatusCode);
+    }
+
+    [Fact]
     public async Task Readiness_fails_when_the_database_is_unreachable_while_liveness_stays_up()
     {
         var unreachable = new Npgsql.NpgsqlConnectionStringBuilder(Db.ConnectionString) { Database = "ledgercore_does_not_exist", Timeout = 2 }.ConnectionString;

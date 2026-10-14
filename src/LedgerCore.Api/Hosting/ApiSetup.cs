@@ -113,10 +113,9 @@ public static class ApiSetup
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseExceptionHandler();
         app.UseStatusCodePages();
-        app.UseAuthentication();
-        app.UseRateLimiter();
-        app.UseAuthorization();
 
+        // Swagger UI is middleware, not an endpoint, so it must run before UseAuthorization:
+        // the fallback policy also applies to requests that match no endpoint and would answer 401.
         if (EnvironmentGuards.IsDevelopmentLike(app.Environment) || app.Configuration.GetValue<bool>("OpenApi:Enabled"))
         {
             app.MapOpenApi().AllowAnonymous();
@@ -126,6 +125,10 @@ public static class ApiSetup
                 options.RoutePrefix = "swagger";
             });
         }
+
+        app.UseAuthentication();
+        app.UseRateLimiter();
+        app.UseAuthorization();
 
         app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous().DisableRateLimiting();
         app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") })

@@ -80,7 +80,7 @@ Amounts are always **integer minor units** (`amountMinor`, øre). `80000` means 
 | Suite | What it uses | Count | Last local result |
 |---|---|---|---|
 | `LedgerCore.UnitTests` | Pure domain/application logic, including seeded randomized invariant runs (3 × 3 000 operations) | 68 | 68 passed |
-| `LedgerCore.IntegrationTests` | Real PostgreSQL + the real API pipeline; real process-kill tests for the API and the worker | 91 | 91 passed |
+| `LedgerCore.IntegrationTests` | Real PostgreSQL + the real API pipeline; real process-kill tests for the API and the worker | 92 | 92 passed |
 | `LedgerCore.ConcurrencyTests` | Races, 100× duplicates, cross-instance contention, deterministic lock interleaving | 11 | 11 passed |
 
 Integration and concurrency tests never mock persistence. Each test gets its own database, cloned from a migrated template. The PostgreSQL server is either a Testcontainers `postgres:17-alpine` container or, if `LEDGERCORE_TEST_POSTGRES` is set, an existing server. See [PROGRESS.md](PROGRESS.md) for exactly what was executed and where.
