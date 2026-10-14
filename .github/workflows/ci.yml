@@ -44,6 +44,12 @@ jobs:
       - name: Concurrency tests
         run: dotnet test tests/LedgerCore.ConcurrencyTests -c Release --no-build --logger "trx;LogFileName=concurrency.trx" --results-directory TestResults
 
+      # `dotnet test` exits 0 when it discovers no tests, so a broken discovery would look green.
+      # Publish the per-suite counts as annotations (visible without access to the logs) and fail on an empty suite.
+      - name: Summarize test counts
+        if: always()
+        run: bash scripts/test-summary.sh TestResults
+
       - name: Report vulnerable packages
         run: dotnet list LedgerCore.slnx package --vulnerable --include-transitive
 
