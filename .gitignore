@@ -1,0 +1,25 @@
+## Build output
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+## Test output
+TestResults/
+*.trx
+coverage*/
+
+## Local configuration and secrets (never commit)
+.env
+*.local.json
+appsettings.*.local.json
+secrets/
+
+## Load test reports are generated locally
+tools/LedgerCore.LoadTest/results/

@@ -1,0 +1,5 @@
+# Normalise line endings in the repository; shell scripts must stay LF so they run on Linux CI and in containers.
+* text=auto
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf

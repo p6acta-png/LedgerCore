@@ -1,0 +1,99 @@
+# Local demonstration stack. DEVELOPMENT ONLY: the defaults below are throwaway demo credentials.
+# Override them with a .env file (see .env.example) if you like; nothing here is a production secret.
+#
+#   docker compose up --build            # postgres + migrate/seed + 2 API instances + 2 workers
+#   docker compose --profile observability up --build   # additionally the OpenTelemetry dashboard
+#
+# API instance 1: http://localhost:8080/swagger    API instance 2: http://localhost:8081/swagger
+
+name: ledgercore
+
+x-ledger-connection: &ledger-connection "Host=postgres;Port=5432;Database=ledgercore;Username=ledgercore;Password=${LEDGERCORE_DB_PASSWORD:-ledgercore_dev_only}"
+
+x-api-environment: &api-environment
+  ASPNETCORE_ENVIRONMENT: Development
+  ConnectionStrings__Ledger: *ledger-connection
+  DevAuthentication__SigningKey: ${LEDGERCORE_DEV_SIGNING_KEY:-dev-only-signing-key-change-me-0123456789abcdef}
+  # Migrations and demo data are applied once by the `migrate` service, not by every API instance.
+  Database__ApplyMigrationsOnStartup: "false"
+  Database__SeedDemoDataOnStartup: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ledgercore
+      POSTGRES_USER: ledgercore
+      POSTGRES_PASSWORD: ${LEDGERCORE_DB_PASSWORD:-ledgercore_dev_only}
+    command: ["postgres", "-c", "max_connections=300"]
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledgercore -d ledgercore"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # One-shot: apply migrations and create the demo wallets (Alice, Bob, Carol), then exit.
+  migrate:
+    build:
+      context: .
+      target: api
+    command: ["seed"]
+    environment: *api-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api-1:
+    build:
+      context: .
+      target: api
+    environment: *api-environment
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  api-2:
+    build:
+      context: .
+      target: api
+    environment: *api-environment
+    ports:
+      - "8081:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__Ledger: *ledger-connection
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    deploy:
+      replicas: 2
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Optional: traces, metrics and logs UI. Start with --profile observability and set
+  # OTEL_EXPORTER_OTLP_ENDPOINT=http://dashboard:18889 (see .env.example). UI: http://localhost:18888
+  dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.5
+    profiles: ["observability"]
+    environment:
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "18888:18888"
+
+volumes:
+  pgdata:

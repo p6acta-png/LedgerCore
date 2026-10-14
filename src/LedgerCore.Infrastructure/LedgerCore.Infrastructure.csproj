@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- PostgreSQL adapters: EF Core model + migrations, Npgsql transaction engine, queries, outbox. -->
+  <ItemGroup>
+    <ProjectReference Include="..\LedgerCore.Application\LedgerCore.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LedgerCore.IntegrationTests" />
+    <InternalsVisibleTo Include="LedgerCore.ConcurrencyTests" />
+    <InternalsVisibleTo Include="LedgerCore.TestSupport" />
+  </ItemGroup>
+</Project>

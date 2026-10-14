@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Use cases and the ports (interfaces) they need. Knows nothing about HTTP, SQL or Npgsql. -->
+  <ItemGroup>
+    <ProjectReference Include="..\LedgerCore.Domain\LedgerCore.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LedgerCore.UnitTests" />
+  </ItemGroup>
+</Project>

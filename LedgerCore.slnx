@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LedgerCore.Api/LedgerCore.Api.csproj" />
+    <Project Path="src/LedgerCore.Application/LedgerCore.Application.csproj" />
+    <Project Path="src/LedgerCore.Domain/LedgerCore.Domain.csproj" />
+    <Project Path="src/LedgerCore.Infrastructure/LedgerCore.Infrastructure.csproj" />
+    <Project Path="src/LedgerCore.Worker/LedgerCore.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LedgerCore.ConcurrencyTests/LedgerCore.ConcurrencyTests.csproj" />
+    <Project Path="tests/LedgerCore.IntegrationTests/LedgerCore.IntegrationTests.csproj" />
+    <Project Path="tests/LedgerCore.TestSupport/LedgerCore.TestSupport.csproj" />
+    <Project Path="tests/LedgerCore.UnitTests/LedgerCore.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/LedgerCore.LoadTest/LedgerCore.LoadTest.csproj" />
+  </Folder>
+</Solution>

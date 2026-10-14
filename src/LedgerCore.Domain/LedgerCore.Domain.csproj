@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Pure domain model: no framework, database or HTTP dependencies. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="LedgerCore.UnitTests" />
+  </ItemGroup>
+</Project>

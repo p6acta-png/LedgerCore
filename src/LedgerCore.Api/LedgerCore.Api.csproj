@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- HTTP adapter: authentication, authorization, validation of transport concerns, error mapping. -->
+  <PropertyGroup>
+    <UserSecretsId>ledgercore-api-dev</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LedgerCore.Application\LedgerCore.Application.csproj" />
+    <ProjectReference Include="..\LedgerCore.Infrastructure\LedgerCore.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="Npgsql.OpenTelemetry" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LedgerCore.IntegrationTests" />
+    <InternalsVisibleTo Include="LedgerCore.ConcurrencyTests" />
+    <InternalsVisibleTo Include="LedgerCore.TestSupport" />
+  </ItemGroup>
+</Project>

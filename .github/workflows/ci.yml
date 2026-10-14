@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  build-and-test:
+    name: Build and test (real PostgreSQL via Testcontainers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore LedgerCore.slnx
+
+      - name: Build (warnings are errors)
+        run: dotnet build LedgerCore.slnx -c Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test tests/LedgerCore.UnitTests -c Release --no-build --logger "trx;LogFileName=unit.trx" --results-directory TestResults
+
+      - name: Integration tests (Testcontainers postgres:17-alpine, real process-kill tests)
+        run: dotnet test tests/LedgerCore.IntegrationTests -c Release --no-build --logger "trx;LogFileName=integration.trx" --results-directory TestResults
+
+      - name: Concurrency tests
+        run: dotnet test tests/LedgerCore.ConcurrencyTests -c Release --no-build --logger "trx;LogFileName=concurrency.trx" --results-directory TestResults
+
+      - name: Report vulnerable packages
+        run: dotnet list LedgerCore.slnx package --vulnerable --include-transitive
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+
+  compose-smoke:
+    name: Docker Compose end-to-end demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stack (postgres, migrate+seed, 2 API instances, 2 workers)
+        run: docker compose up -d --build
+
+      - name: Run demo script against both instances
+        run: bash scripts/demo.sh
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
