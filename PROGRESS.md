@@ -95,10 +95,14 @@ Not verified by CI:
 * Only Docker on Linux (`ubuntu-latest`) was used. Docker Desktop on Windows or macOS has not been tried.
 * The load test was not run in CI.
 
+Hardening after the first runs (neither problem had been observed):
+
+* `docker-compose.yml`: the postgres healthcheck now runs `pg_isready -h 127.0.0.1`, over TCP. The official image's temporary init server listens only on the Unix socket (`listen_addresses=''`), so the previous socket check could report healthy during initialisation, and the one-shot `migrate` service does not retry its connection. Over TCP the check passes only once the final server is up, so `migrate` was left without a connect retry.
+* `.github/workflows/ci.yml`: `actions/checkout@v7`, `actions/setup-dotnet@v6` and `actions/upload-artifact@v7`, which run on Node.js 24. The `@v4` versions targeted the deprecated Node.js 20.
+
 ## Not done / open items
 
 * The production authentication path (external OpenID Connect provider via `Authentication:Jwt:Authority`) is configured and guarded, but has not been run against a real identity provider.
 * There is no unfreeze workflow for wallets frozen by reconciliation.
 * The optional observability profile (Aspire dashboard image in `docker-compose.yml`) is unverified.
-* Possible compose start-up race, **not observed** in the two CI runs: the postgres healthcheck runs `pg_isready` over the Unix socket. The official image's temporary init server also listens on that socket, so the container can report healthy during initialisation, and the `migrate` service does not retry its connection. Hardening options: `pg_isready -h 127.0.0.1`, or a connect retry in `migrate`.
-* CI maintenance warnings from GitHub: `actions/checkout@v4`, `actions/setup-dotnet@v4` and `actions/upload-artifact@v4` target the deprecated Node.js 20 and are currently forced onto Node.js 24. `ubuntu-latest` moves to Ubuntu 26 from 2026-10-19, and the workflow has not run there yet.
+* `ubuntu-latest` moves to Ubuntu 26 from 2026-10-19, and the workflow has not run there yet.
